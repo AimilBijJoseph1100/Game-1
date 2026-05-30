@@ -1,0 +1,633 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  #game {
+    font-family: 'EB Garamond', serif;
+    background: #0a0908;
+    color: #d4c9b0;
+    min-height: 600px;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  #scene {
+    position: relative;
+    width: 100%;
+    height: 420px;
+    background: #0d0b09;
+    overflow: hidden;
+    cursor: crosshair;
+  }
+
+  .bg-layer {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 80%, #1a1208 0%, #080604 60%);
+  }
+
+  .scene-title {
+    position: absolute;
+    top: 14px; left: 20px;
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #6b5a3a;
+    opacity: 0.8;
+  }
+
+  .vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.7) 100%);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .object {
+    position: absolute;
+    cursor: pointer;
+    transition: filter 0.3s;
+  }
+  .object:hover svg { filter: drop-shadow(0 0 8px #c8a96088); }
+  .object.glowing svg { filter: drop-shadow(0 0 12px #c8a960cc) !important; }
+
+  #mara {
+    position: absolute;
+    bottom: 60px;
+    left: 160px;
+    width: 28px;
+    transition: left 0.6s ease;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  #notebook-panel {
+    background: #100e0b;
+    border-top: 1px solid #2a2218;
+    padding: 14px 20px;
+    min-height: 160px;
+    position: relative;
+  }
+
+  #notebook-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .nb-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #5a4a2e;
+  }
+
+  #echo-text {
+    font-family: 'EB Garamond', serif;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #c8b890;
+    min-height: 60px;
+    font-style: italic;
+    transition: opacity 0.5s;
+  }
+
+  #hint {
+    font-size: 12px;
+    color: #3d3220;
+    margin-top: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  .clue-counter {
+    position: absolute;
+    top: 14px; right: 20px;
+    font-size: 12px;
+    color: #4a3c22;
+    letter-spacing: 1px;
+  }
+
+  #scene-nav {
+    display: flex;
+    gap: 0;
+    background: #0a0807;
+    border-top: 1px solid #1a1510;
+  }
+
+  .nav-btn {
+    flex: 1;
+    padding: 9px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid #1a1510;
+    color: #4a3c22;
+    font-family: 'EB Garamond', serif;
+    font-size: 13px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+  }
+  .nav-btn:last-child { border-right: none; }
+  .nav-btn:hover { color: #c8a960; background: #110f0c; }
+  .nav-btn.active { color: #c8a960; border-bottom: 1px solid #c8a960; }
+
+  .echo-flash {
+    animation: echoAnim 2s ease;
+  }
+  @keyframes echoAnim {
+    0% { opacity: 0; transform: translateY(4px); }
+    15% { opacity: 1; transform: translateY(0); }
+    85% { opacity: 1; }
+    100% { opacity: 1; }
+  }
+
+  .ghost {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 8;
+    animation: ghostFloat 3s ease forwards;
+  }
+  @keyframes ghostFloat {
+    0% { opacity: 0; transform: translateY(0); }
+    20% { opacity: 0.35; }
+    80% { opacity: 0.2; }
+    100% { opacity: 0; transform: translateY(-30px); }
+  }
+
+  #title-screen {
+    position: absolute;
+    inset: 0;
+    background: #050403;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    gap: 6px;
+  }
+
+  #title-screen h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    color: #c8b890;
+    letter-spacing: 2px;
+    text-align: center;
+  }
+
+  #title-screen .subtitle {
+    font-style: italic;
+    color: #5a4a2e;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  #start-btn {
+    margin-top: 24px;
+    padding: 10px 32px;
+    background: transparent;
+    border: 1px solid #3a2e1a;
+    color: #8a7040;
+    font-family: 'EB Garamond', serif;
+    font-size: 15px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  #start-btn:hover { border-color: #c8a960; color: #c8a960; }
+
+  .scene-svg { width: 100%; height: 100%; }
+
+  #ending-screen {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(5,4,3,0.97);
+    z-index: 50;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    text-align: center;
+  }
+  #ending-screen h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: #c8b890;
+    margin-bottom: 16px;
+  }
+  #ending-screen p {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #8a7858;
+    max-width: 460px;
+    font-style: italic;
+  }
+  #replay-btn {
+    margin-top: 24px;
+    padding: 8px 24px;
+    background: transparent;
+    border: 1px solid #3a2e1a;
+    color: #6a5830;
+    font-family: 'EB Garamond', serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  #replay-btn:hover { border-color: #c8a960; color: #c8a960; }
+</style>
+
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Echoes of the Forgotten — a mystery puzzle game. Explore abandoned locations, touch objects to reveal memory echoes, and piece together what happened to the town of Harrow's Cove.</h2>
+
+<div id="game">
+
+  <div id="title-screen">
+    <div style="font-size:11px;letter-spacing:4px;color:#3a2e1a;text-transform:uppercase;margin-bottom:8px;">A Memory Mystery</div>
+    <h1>Echoes of the<br>Forgotten</h1>
+    <div class="subtitle">Everyone left in a hurry.<br>The dinner table was set. No one came.</div>
+    <button id="start-btn" onclick="startGame()">Enter the Town</button>
+  </div>
+
+  <div id="ending-screen">
+    <h2>The Truth Surfaces</h2>
+    <p id="ending-text"></p>
+    <button id="replay-btn" onclick="replayGame()">Return to Harrow's Cove</button>
+  </div>
+
+  <div id="scene">
+    <div class="bg-layer"></div>
+    <div class="vignette"></div>
+    <div class="scene-title" id="scene-label">The Kitchen</div>
+    <svg id="scene-svg" class="scene-svg" viewBox="0 0 680 420" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;"></svg>
+    <div id="ghost-container" style="position:absolute;inset:0;pointer-events:none;z-index:8;"></div>
+
+    <svg id="mara-svg" style="position:absolute;bottom:62px;left:150px;width:22px;height:50px;z-index:6;pointer-events:none;transition:left 0.5s ease;" viewBox="0 0 22 50" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="11" cy="7" r="6" fill="#b8a070" opacity="0.9"/>
+      <rect x="7" y="14" width="8" height="20" rx="2" fill="#6a5030" opacity="0.85"/>
+      <line x1="11" y1="34" x2="8" y2="50" stroke="#4a3820" stroke-width="2.5"/>
+      <line x1="11" y1="34" x2="14" y2="50" stroke="#4a3820" stroke-width="2.5"/>
+      <line x1="7" y1="18" x2="2" y2="28" stroke="#4a3820" stroke-width="2"/>
+      <line x1="15" y1="18" x2="20" y2="28" stroke="#4a3820" stroke-width="2"/>
+    </svg>
+  </div>
+
+  <div id="notebook-panel">
+    <div id="notebook-header">
+      <div class="nb-label">Mara's Notebook</div>
+      <div class="clue-counter" id="clue-counter">0 / 8 echoes</div>
+    </div>
+    <div id="echo-text">Touch an object to hear its echo...</div>
+    <div id="hint"></div>
+  </div>
+
+  <div id="scene-nav">
+    <button class="nav-btn active" onclick="goScene(0)" id="nav0">The Kitchen</button>
+    <button class="nav-btn" onclick="goScene(1)" id="nav1">The Lighthouse</button>
+    <button class="nav-btn" onclick="goScene(2)" id="nav2">The Pier</button>
+    <button class="nav-btn" onclick="goScene(3)" id="nav3">Town Hall</button>
+  </div>
+</div>
+
+<script>
+const SCENES = [
+  {
+    name: "The Kitchen",
+    bg: "#1a0e08",
+    objects: [
+      {
+        id:"table", label:"Dinner Table", x:200, y:180, w:200, h:80,
+        draw: (g) => `<rect x="200" y="230" width="200" height="14" rx="3" fill="#3d2510"/><rect x="210" y="244" width="8" height="40" fill="#2d1c0a"/><rect x="382" y="244" width="8" height="40" fill="#2d1c0a"/><rect x="240" y="200" width="120" height="30" rx="2" fill="#2a1a08" opacity="0.6"/><circle cx="270" cy="215" r="15" fill="#1a0f06" stroke="#4a3020" stroke-width="1" opacity="0.8"/><circle cx="340" cy="215" r="15" fill="#1a0f06" stroke="#4a3020" stroke-width="1" opacity="0.8"/><rect x="250" y="210" width="12" height="3" rx="1" fill="#6a4828" opacity="0.5"/><rect x="318" y="210" width="12" height="3" rx="1" fill="#6a4828" opacity="0.5"/>`,
+        echo: "She set it for three. Candles lit. The youngest's cup still had milk in it — she was always afraid of the dark. When the bell rang, she left mid-stir. The soup is still on the stove.",
+        ghost: "👻 A woman's hands folding a napkin, quickly, carefully.",
+        clue: "Three place settings. She expected her children."
+      },
+      {
+        id:"clock", label:"Wall Clock", x:480, y:100, w:40, h:50,
+        draw: () => `<circle cx="500" cy="110" r="28" fill="#0f0a06" stroke="#3a2810" stroke-width="2"/><circle cx="500" cy="110" r="2" fill="#c8a060"/><line x1="500" y1="110" x2="500" y2="90" stroke="#c8a060" stroke-width="2"/><line x1="500" y1="110" x2="516" y2="114" stroke="#8a6040" stroke-width="1.5"/>`,
+        echo: "Stopped at 7:42. The hands refused to move after that. Someone wound it faithfully every morning for eleven years. On the last morning, they forgot.",
+        ghost: "⏰ Hands spinning backwards, faster and faster.",
+        clue: "7:42 pm. The evacuation began at dinner hour."
+      },
+      {
+        id:"window", label:"Kitchen Window", x:80, y:80, w:90, h:100,
+        draw: () => `<rect x="80" y="80" width="90" height="100" rx="2" fill="#0a1520" stroke="#2a1a08" stroke-width="2"/><line x1="125" y1="80" x2="125" y2="180" stroke="#2a1a08" stroke-width="2"/><line x1="80" y1="130" x2="170" y2="130" stroke="#2a1a08" stroke-width="2"/><text x="125" y="158" font-size="9" fill="#3a5060" text-anchor="middle" font-family="serif">sea</text>`,
+        echo: "From this window she watched the harbor every evening. On the last night, the water was the wrong color. Not the grey of storms — something older. She pressed her palm to the glass and it was cold in a way glass shouldn't be.",
+        ghost: "🌊 A hand-print in frost on the glass.",
+        clue: "The sea changed color. Whatever came, it came from the water."
+      },
+      {
+        id:"note", label:"Torn Paper", x:420, y:310, w:60, h:40,
+        draw: () => `<rect x="420" y="310" width="55" height="38" rx="1" fill="#2a1f10" transform="rotate(-8,447,329)"/><line x1="428" y1="320" x2="466" y2="318" stroke="#3a2a14" stroke-width="1"/><line x1="426" y1="328" x2="464" y2="326" stroke="#3a2a14" stroke-width="1"/><line x1="428" y1="336" x2="452" y2="334" stroke="#3a2a14" stroke-width="1"/>`,
+        echo: "\"...don't look at it directly. Cover the children's eyes. Meet at the — \" The rest was torn away, or burned, or taken. Three words remain in another hand, smaller, urgent: 'It remembers faces.'",
+        ghost: "📝 Handwriting that changes mid-sentence.",
+        clue: "A warning: don't look at it. It remembers faces."
+      }
+    ]
+  },
+  {
+    name: "The Lighthouse",
+    bg: "#080d14",
+    objects: [
+      {
+        id:"logbook", label:"Keeper's Logbook", x:150, y:260, w:80, h:50,
+        draw: () => `<rect x="150" y="260" width="75" height="52" rx="2" fill="#1a1208" stroke="#3a2a14" stroke-width="1.5" transform="rotate(-5,187,286)"/><line x1="158" y1="272" x2="216" y2="269" stroke="#2a1e10" stroke-width="1"/><line x1="157" y1="280" x2="215" y2="277" stroke="#2a1e10" stroke-width="1"/><line x1="158" y1="288" x2="214" y2="285" stroke="#2a1e10" stroke-width="1"/>`,
+        echo: "Oct 14: Light behaving strangely. Not the mechanism — the light itself seems reluctant. Oct 15: Skipped rotation twice. Oct 16: The light went out on its own. I relit it. It went out again. Something below the water line does not want to be seen.",
+        ghost: "📖 Pages turning by themselves, entries writing themselves.",
+        clue: "The lighthouse light was extinguished deliberately — from below."
+      },
+      {
+        id:"telescope", label:"Brass Telescope", x:460, y:200, w:100, h:30,
+        draw: () => `<rect x="440" y="210" width="120" height="16" rx="8" fill="#4a3820" stroke="#6a5030" stroke-width="1"/><circle cx="558" cy="218" r="12" fill="#0a1520" stroke="#5a4020" stroke-width="1.5"/><rect x="400" y="215" width="45" height="6" rx="3" fill="#3a2810"/>`,
+        echo: "The last keeper looked through this and saw something look back. Not a ship. Not a whale. Something that understood what a telescope was — that understood it was being watched — and adjusted itself accordingly. He closed the lens. He never opened it again.",
+        ghost: "🔭 An eye — enormous, patient, ancient — filling the lens.",
+        clue: "It is intelligent. It knew it was being observed."
+      },
+      {
+        id:"photo", label:"Framed Photo", x:300, y:150, w:60, h:70,
+        draw: () => `<rect x="295" y="148" width="70" height="80" rx="2" fill="#1a1208" stroke="#3a2810" stroke-width="2"/><rect x="303" y="156" width="54" height="60" fill="#0a0e14"/><text x="330" y="195" font-size="8" fill="#2a3040" text-anchor="middle" font-family="serif">1987</text>`,
+        echo: "A crew of seven. Names on the back in faded pencil. Six names are crossed out — not harshly, almost gently, the way you'd cross out a word you meant to say but chose not to. The seventh name has a question mark beside it. That person is still unaccounted for.",
+        ghost: "👤 Six figures fading from the photograph, one by one.",
+        clue: "Six of the seven crew are gone. The seventh was never found — or never left."
+      }
+    ]
+  },
+  {
+    name: "The Pier",
+    bg: "#060d12",
+    objects: [
+      {
+        id:"boat", label:"Moored Rowboat", x:120, y:280, w:140, h:60,
+        draw: () => `<ellipse cx="195" cy="320" rx="90" ry="22" fill="#1a1208" stroke="#3a2810" stroke-width="1.5"/><rect x="130" y="298" width="130" height="22" rx="10" fill="#0f0c08" stroke="#2a1e10" stroke-width="1"/><rect x="188" y="270" width="4" height="30" fill="#2a1a08"/><line x1="176" y1="270" x2="204" y2="270" stroke="#3a2810" stroke-width="1.5"/>`,
+        echo: "Still tied to the dock. Everyone else took their boats. Whoever owned this one chose to stay — or was told to stay — or couldn't leave. One oar is missing. The remaining one has deep scratch marks, like fingers gripping in terror.",
+        ghost: "🚣 Oars moving alone in the dark water.",
+        clue: "Someone stayed behind voluntarily. The scratched oar tells another story."
+      },
+      {
+        id:"lantern", label:"Dock Lantern", x:500, y:180, w:30, h:60,
+        draw: () => `<rect x="508" y="180" width="4" height="80" fill="#2a1a08"/><rect x="495" y="200" width="30" height="40" rx="4" fill="#0f0a06" stroke="#4a3020" stroke-width="1.5"/><ellipse cx="510" cy="220" rx="8" ry="10" fill="#c87820" opacity="0.15"/>`,
+        echo: "Still burning. Twelve years later and it burns. No one refills oil lanterns that burn for twelve years. Unless the lantern isn't burning oil. Unless something else learned what light meant to us — learned it was a kind of promise, a way of saying: I am here, I am waiting, it is safe to come home.",
+        ghost: "🔦 The flame pulses like breathing.",
+        clue: "The lantern has burned for twelve years. It is a lure."
+      },
+      {
+        id:"shoe", label:"Child's Shoe", x:340, y:360, w:40, h:30,
+        draw: () => `<ellipse cx="355" cy="374" rx="28" ry="11" fill="#2a1a10" stroke="#3a2415" stroke-width="1.5"/><rect x="330" y="362" width="25" height="14" rx="3" fill="#3a2415"/><line x1="342" y1="358" x2="342" y2="364" stroke="#4a3020" stroke-width="1"/>`,
+        echo: "Size four. A buckle shoe. The buckle is still done up — she was lifted out of it, not running. Left on the edge of the pier as if placed there deliberately. Or as if something emerging from the water paused and set it down, curious about what it was, already understanding more than it should.",
+        ghost: "👟 A small shape walking to the water's edge, stopping.",
+        clue: "A child was taken — but gently. It was curious, not violent."
+      }
+    ]
+  },
+  {
+    name: "Town Hall",
+    bg: "#0a0908",
+    objects: [
+      {
+        id:"map", label:"Evacuation Map", x:200, y:160, w:160, h:120,
+        draw: () => `<rect x="198" y="158" width="164" height="124" rx="2" fill="#1a1510" stroke="#3a2810" stroke-width="1.5"/><line x1="210" y1="180" x2="350" y2="180" stroke="#2a1e10" stroke-width="1"/><line x1="210" y1="200" x2="350" y2="200" stroke="#2a1e10" stroke-width="1"/><circle cx="280" cy="230" r="18" fill="none" stroke="#8a1010" stroke-width="1.5" stroke-dasharray="4,3"/><text x="280" y="270" font-size="9" fill="#5a3020" text-anchor="middle" font-family="serif">AVOID</text>`,
+        echo: "Evacuation routes are drawn in four colors. Red routes are crossed out. Blue routes are crossed out. The only remaining path is inland — away from all water, all mirrors, all glass. At the bottom, someone wrote: 'Do not gather in groups. It finds groups first. It likes the echo of many voices saying the same thing.'",
+        ghost: "🗺️ Red X marks multiplying across the map.",
+        clue: "It finds groups. It's drawn to collective sound — resonance."
+      },
+      {
+        id:"radio", label:"Emergency Radio", x:430, y:240, w:80, h:60,
+        draw: () => `<rect x="420" y="240" width="90" height="55" rx="3" fill="#0f0c09" stroke="#2a1e10" stroke-width="1.5"/><circle cx="445" cy="262" r="10" fill="#0a0806" stroke="#2a1810" stroke-width="1"/><rect x="460" y="250" width="40" height="6" rx="3" fill="#1a1208"/><rect x="460" y="262" width="30" height="6" rx="3" fill="#1a1208"/><circle cx="445" cy="284" r="5" fill="#1a0e06" stroke="#3a2010" stroke-width="1"/>`,
+        echo: "Still transmitting. No one is receiving. The message loops: 'Harrow's Cove is under— Harrow's Cove is under— ' It never finishes. But if you listen past the static, underneath it, almost below hearing: something that has learned to mimic the signal. Broadcasting back. Asking a question in a language it taught itself from our distress calls.",
+        ghost: "📻 Static that almost sounds like a name being called.",
+        clue: "It learned our radio frequencies. It has been listening — and now it speaks."
+      },
+      {
+        id:"mirror", label:"Covered Mirror", x:90, y:150, w:70, h:100,
+        draw: () => `<rect x="88" y="148" width="74" height="104" rx="3" fill="#1a1510" stroke="#3a2810" stroke-width="2"/><rect x="94" y="154" width="62" height="92" rx="2" fill="#0f0c08"/><line x1="94" y1="154" x2="156" y2="246" stroke="#1a1510" stroke-width="3"/><line x1="156" y1="154" x2="94" y2="246" stroke="#1a1510" stroke-width="3"/>`,
+        echo: "Every mirror in town hall was covered the morning after. Black cloth pinned at the corners — urgent, imprecise, like it was done in darkness. On the cloth of this one, in chalk, someone wrote: 'It came through here first. We don't know if it left. Cover them all. Don't look. If you see yourself and you are smiling, run.'",
+        ghost: "🪞 Your reflection in the cloth, moving a half-second behind.",
+        clue: "It uses mirrors as doorways. It may still be here."
+      }
+    ]
+  }
+];
+
+const ENDINGS = [
+  "You have heard enough. Harrow's Cove was not evacuated. It was abandoned — the way you abandon a place that has become a threshold. Something ancient rose from the deep, intelligent and curious in the way deep time makes things curious. It didn't destroy the town. It studied it. Every object you touched still carries the warmth of its attention. Mara closes her notebook. One entry remains unwritten — her own.",
+  "The truth assembles itself like a tide coming in. The creature from the deep learned human longing by absorbing our echoes — our radio signals, our photographs, our dinner tables set for people who didn't come. It didn't take the people of Harrow's Cove. It became them — or tried to. Somewhere in the deep, twelve years of human memory are being carefully, perfectly remembered. Whether that is horror or grace, Mara cannot say.",
+];
+
+let currentScene = 0;
+let foundEchoes = new Set();
+let maraX = 150;
+
+function startGame() {
+  document.getElementById('title-screen').style.display = 'none';
+  renderScene(0);
+}
+
+function renderScene(idx) {
+  const s = SCENES[idx];
+  currentScene = idx;
+  document.getElementById('scene-label').textContent = s.name;
+  document.querySelectorAll('.nav-btn').forEach((b,i) => b.classList.toggle('active', i===idx));
+
+  const svg = document.getElementById('scene-svg');
+  svg.innerHTML = '';
+
+  // Sky/floor
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  svg.appendChild(defs);
+
+  // Floor
+  const floor = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  floor.setAttribute('x','0'); floor.setAttribute('y','300');
+  floor.setAttribute('width','680'); floor.setAttribute('height','120');
+  floor.setAttribute('fill','#0d0a06');
+  svg.appendChild(floor);
+
+  // Ambient light streak
+  const streak = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+  streak.setAttribute('cx','340'); streak.setAttribute('cy','300');
+  streak.setAttribute('rx','200'); streak.setAttribute('ry','30');
+  streak.setAttribute('fill','#1a1208'); streak.setAttribute('opacity','0.5');
+  svg.appendChild(streak);
+
+  // Scene-specific bg elements
+  if(idx===1) {
+    // Lighthouse tower
+    const lt = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    lt.setAttribute('x','580'); lt.setAttribute('y','60');
+    lt.setAttribute('width','60'); lt.setAttribute('height','260');
+    lt.setAttribute('rx','6'); lt.setAttribute('fill','#0d0e12');
+    svg.appendChild(lt);
+    const lc = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    lc.setAttribute('cx','610'); lc.setAttribute('cy','80');
+    lc.setAttribute('r','26'); lc.setAttribute('fill','#080a10');
+    lc.setAttribute('stroke','#1a1820'); lc.setAttribute('stroke-width','3');
+    svg.appendChild(lc);
+    const lglow = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    lglow.setAttribute('cx','610'); lglow.setAttribute('cy','80');
+    lglow.setAttribute('r','12'); lglow.setAttribute('fill','#c8a030'); lglow.setAttribute('opacity','0.12');
+    svg.appendChild(lglow);
+  }
+  if(idx===2) {
+    // Water
+    const water = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    water.setAttribute('x','0'); water.setAttribute('y','300');
+    water.setAttribute('width','680'); water.setAttribute('height','120');
+    water.setAttribute('fill','#060d14');
+    svg.appendChild(water);
+    // Dock planks
+    for(let px=60;px<620;px+=40){
+      const plank = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      plank.setAttribute('x',px); plank.setAttribute('y','290');
+      plank.setAttribute('width','35'); plank.setAttribute('height','10');
+      plank.setAttribute('rx','1'); plank.setAttribute('fill','#14100a');
+      svg.appendChild(plank);
+    }
+  }
+  if(idx===3) {
+    // Windows
+    [[80,80],[580,80],[80,200],[580,200]].forEach(([wx,wy])=>{
+      const win = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      win.setAttribute('x',wx); win.setAttribute('y',wy);
+      win.setAttribute('width','50'); win.setAttribute('height','60');
+      win.setAttribute('rx','2'); win.setAttribute('fill','#080a10');
+      win.setAttribute('stroke','#1a1820'); win.setAttribute('stroke-width','1.5');
+      svg.appendChild(win);
+    });
+  }
+
+  // Draw objects
+  SCENES[idx].objects.forEach(obj => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','object');
+    g.setAttribute('id','obj-'+obj.id);
+    g.setAttribute('style','cursor:pointer;');
+    g.innerHTML = obj.draw();
+
+    // Glow if already found
+    if(foundEchoes.has(idx+'-'+obj.id)) {
+      g.innerHTML += `<text x="${obj.x + (obj.w||40)/2}" y="${obj.y - 8}" font-size="10" fill="#6a5030" text-anchor="middle" font-family="serif">✦</text>`;
+    }
+
+    g.addEventListener('click', () => touchObject(idx, obj));
+    svg.appendChild(g);
+
+    // Label on hover
+    const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+    label.setAttribute('x', obj.x + (obj.w||40)/2);
+    label.setAttribute('y', obj.y - 14);
+    label.setAttribute('font-size','10');
+    label.setAttribute('fill','#4a3820');
+    label.setAttribute('text-anchor','middle');
+    label.setAttribute('font-family','EB Garamond, serif');
+    label.setAttribute('opacity','0');
+    label.textContent = obj.label;
+    label.setAttribute('pointer-events','none');
+    g.appendChild(label);
+    g.addEventListener('mouseenter', () => { label.setAttribute('opacity','1'); label.setAttribute('fill','#8a6840'); });
+    g.addEventListener('mouseleave', () => { label.setAttribute('opacity','0'); });
+  });
+
+  // Move Mara
+  document.getElementById('mara-svg').style.left = '150px';
+}
+
+function touchObject(sceneIdx, obj) {
+  const key = sceneIdx+'-'+obj.id;
+  const isNew = !foundEchoes.has(key);
+  if(isNew) foundEchoes.add(key);
+
+  // Move Mara to object
+  const targetX = Math.min(Math.max(obj.x - 20, 20), 580);
+  document.getElementById('mara-svg').style.left = targetX + 'px';
+
+  // Show echo
+  const echoEl = document.getElementById('echo-text');
+  echoEl.style.opacity = '0';
+  setTimeout(() => {
+    echoEl.className = 'echo-flash';
+    echoEl.textContent = obj.echo;
+    echoEl.style.opacity = '1';
+  }, 200);
+
+  // Show hint/clue
+  const hint = document.getElementById('hint');
+  if(isNew) {
+    hint.textContent = '✦ Clue noted: ' + obj.clue;
+    hint.style.color = '#6a5030';
+  } else {
+    hint.textContent = obj.clue;
+    hint.style.color = '#3d3220';
+  }
+
+  // Spawn ghost
+  spawnGhost(obj);
+
+  // Update counter
+  document.getElementById('clue-counter').textContent = foundEchoes.size + ' / 8 echoes';
+
+  // Update star in SVG
+  const g = document.getElementById('obj-'+obj.id);
+  if(g && isNew) {
+    const star = document.createElementNS('http://www.w3.org/2000/svg','text');
+    star.setAttribute('x', obj.x + (obj.w||40)/2);
+    star.setAttribute('y', obj.y - 8);
+    star.setAttribute('font-size','10');
+    star.setAttribute('fill','#6a5030');
+    star.setAttribute('text-anchor','middle');
+    star.setAttribute('font-family','serif');
+    star.textContent = '✦';
+    g.appendChild(star);
+  }
+
+  // Check ending
+  if(foundEchoes.size >= 8) {
+    setTimeout(showEnding, 1800);
+  }
+}
+
+function spawnGhost(obj) {
+  const container = document.getElementById('ghost-container');
+  const ghost = document.createElement('div');
+  ghost.className = 'ghost';
+  ghost.style.left = (obj.x + 20) + 'px';
+  ghost.style.top = (obj.y + 30) + 'px';
+  ghost.style.fontSize = '11px';
+  ghost.style.color = '#8a7040';
+  ghost.style.fontFamily = 'EB Garamond, serif';
+  ghost.style.fontStyle = 'italic';
+  ghost.style.maxWidth = '200px';
+  ghost.style.lineHeight = '1.5';
+  ghost.textContent = obj.ghost;
+  container.appendChild(ghost);
+  setTimeout(() => { if(container.contains(ghost)) container.removeChild(ghost); }, 3500);
+}
+
+function goScene(idx) {
+  document.getElementById('echo-text').textContent = 'Touch an object to hear its echo...';
+  document.getElementById('hint').textContent = '';
+  renderScene(idx);
+}
+
+function showEnding() {
+  const el = document.getElementById('ending-screen');
+  el.style.display = 'flex';
+  document.getElementById('ending-text').textContent = ENDINGS[Math.floor(Math.random()*ENDINGS.length)];
+}
+
+function replayGame() {
+  foundEchoes.clear();
+  document.getElementById('ending-screen').style.display = 'none';
+  document.getElementById('clue-counter').textContent = '0 / 8 echoes';
+  document.getElementById('echo-text').textContent = 'Touch an object to hear its echo...';
+  document.getElementById('hint').textContent = '';
+  renderScene(0);
+}
+</script>
